@@ -83,27 +83,29 @@ def _tx(deva, scheme):
     return deva if scheme == _S.DEVANAGARI else _S.transliterate(deva, _S.DEVANAGARI, scheme)
 
 
+_MAL = ("हठलुठ दल घिष्टोत्कण्ठदष्टोष्ठ विद्युत्\nसटशठ कठिनोरः पीठभित्सुष्ठुनिष्ठाम् ।\n"
+        "पठतिनुतव कण्ठाधिष्ठ घोरान्त्रमाला\nदह दह नरसिंहासह्यवीर्याहितं मे ॥")
+# (label, devanagari, display script, meter)  — meter=AUTO unless detection needs help
 _SAMPLES = [
     ("Kṛṣṇa — Vasudevasutaṃ (Devanagari)",
-     "वासुदेवसुतं देवं कंसचाणूरमर्दनम् ।\nदेवकीपरमानन्दं कृष्णं वन्दे जगद्गुरुम् ॥", _S.DEVANAGARI),
+     "वासुदेवसुतं देवं कंसचाणूरमर्दनम् ।\nदेवकीपरमानन्दं कृष्णं वन्दे जगद्गुरुम् ॥", _S.DEVANAGARI, AUTO),
     ("Viṣṇu — Śuklāmbaradharaṃ (Devanagari)",
-     "शुक्लाम्बरधरं विष्णुं शशिवर्णं चतुर्भुजम् ।\nप्रसन्नवदनं ध्यायेत् सर्वविघ्नोपशान्तये ॥", _S.DEVANAGARI),
-    ("Gaṇeśa — Vakratuṇḍa (Devanagari)",
-     "वक्रतुण्ड महाकाय सूर्यकोटिसमप्रभ ।\nनिर्विघ्नं कुरु मे देव सर्वकार्येषु सर्वदा ॥", _S.DEVANAGARI),
-    ("Maṅgala-śloka — Maṅgalaṃ bhagavān Viṣṇuḥ (Devanagari)",
-     "मङ्गलं भगवान् विष्णुः मङ्गलं गरुडध्वजः ।\nमङ्गलं पुण्डरीकाक्षः मङ्गलायतनो हरिः ॥", _S.DEVANAGARI),
+     "शुक्लाम्बरधरं विष्णुं शशिवर्णं चतुर्भुजम् ।\nप्रसन्नवदनं ध्यायेत् सर्वविघ्नोपशान्तये ॥", _S.DEVANAGARI, AUTO),
+    ("Narasiṃha — retroflex tongue-twister (mālinī)", _MAL, _S.DEVANAGARI, "mālinī"),
+    ("Karāgre vasate — jihvāmūlīya + upadhmānīya (Devanagari)",
+     "कराग्रे वसते लक्ष्मीः करमध्ये सरस्वती ।\nकरमूले तु गोविन्दः प्रभाते करदर्शनम् ॥", _S.DEVANAGARI, AUTO),
     ("Sarasvatī — Yā kundendu · śārdūlavikrīḍita (Devanagari)",
      "या कुन्देन्दुतुषारहारधवला या शुभ्रवस्त्रावृता\nया वीणावरदण्डमण्डितकरा या श्वेतपद्मासना ।\n"
-     "या ब्रह्माच्युतशङ्करप्रभृतिभिर्देवैः सदा वन्दिता\nसा मां पातु सरस्वती भगवती निःशेषजाड्यापहा ॥", _S.DEVANAGARI),
+     "या ब्रह्माच्युतशङ्करप्रभृतिभिर्देवैः सदा वन्दिता\nसा मां पातु सरस्वती भगवती निःशेषजाड्यापहा ॥", _S.DEVANAGARI, AUTO),
+    ("Gaṇeśa — Vakratuṇḍa (Devanagari)",
+     "वक्रतुण्ड महाकाय सूर्यकोटिसमप्रभ ।\nनिर्विघ्नं कुरु मे देव सर्वकार्येषु सर्वदा ॥", _S.DEVANAGARI, AUTO),
     ("Guru — Gururbrahmā (Kannada script)",
-     "गुरुर्ब्रह्मा गुरुर्विष्णुः गुरुर्देवो महेश्वरः ।\nगुरुः साक्षात् परं ब्रह्म तस्मै श्रीगुरवे नमः ॥", _S.KANNADA),
+     "गुरुर्ब्रह्मा गुरुर्विष्णुः गुरुर्देवो महेश्वरः ।\nगुरुः साक्षात् परं ब्रह्म तस्मै श्रीगुरवे नमः ॥", _S.KANNADA, AUTO),
     ("Sarasvatī — Namastubhyaṃ (Telugu script)",
-     "सरस्वति नमस्तुभ्यं वरदे कामरूपिणि ।\nविद्यारम्भं करिष्यामि सिद्धिर्भवतु मे सदा ॥", _S.TELUGU),
-    ("Morning — Karāgre vasate Lakṣmīḥ (Malayalam script)",
-     "कराग्रे वसते लक्ष्मीः करमध्ये सरस्वती ।\nकरमूले तु गोविन्दः प्रभाते करदर्शनम् ॥", _S.MALAYALAM),
+     "सरस्वति नमस्तुभ्यं वरदे कामरूपिणि ।\nविद्यारम्भं करिष्यामि सिद्धिर्भवतु मे सदा ॥", _S.TELUGU, AUTO),
 ]
-EXAMPLES = [[_tx(d, sc), AUTO, 60] for _, d, sc in _SAMPLES]
-EXAMPLE_LABELS = [name for name, _, _ in _SAMPLES]
+EXAMPLES = [[_tx(d, sc), m, 60] for _, d, sc, m in _SAMPLES]
+EXAMPLE_LABELS = [name for name, _, _, _ in _SAMPLES]
 EX_DEFAULT = EXAMPLES[0][0]
 
 _RENDERER = None

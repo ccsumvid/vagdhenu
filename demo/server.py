@@ -1,7 +1,6 @@
 """Vāgdhenu standalone warm server for a dedicated GPU (ece A6000).
 Loads the model ONCE at startup and serves it — no ZeroGPU, no per-visitor quota wall.
-Adds the same abuse guards as the Space: one shloka per request + 10 renders/IP/day.
-Run inside the validated `indicf5` conda env (f5_tts + bigvgan + torch 2.4.1)."""
+Guards: one shloka per request + 10 renders/IP/day (src/limits.py). Run in the `indicf5` env."""
 import os, sys, json
 HERE = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(HERE, "src")
@@ -24,7 +23,7 @@ print("[boot] model warm, ready.", flush=True)
 
 _bank = json.load(open(BANK, encoding="utf-8"))
 METERS = [k for k,v in _bank.items() if not k.startswith("_") and isinstance(v,dict) and "wav" in v]
-_PREF = [m for m in ("anuṣṭubh","upajāti","śārdūlavikrīḍita","vasantatilakā") if m in METERS]
+_PREF = [m for m in ("anuṣṭubh","upajāti","śārdūlavikrīḍita","vasantatilakā","mālinī") if m in METERS]
 METERS = _PREF + [m for m in METERS if m not in _PREF]
 _FALLBACK = "vasantatilakā" if "vasantatilakā" in METERS else METERS[0]
 _ALIAS = {}
@@ -34,14 +33,20 @@ for _k,_v in _bank.items():
 METER_CHOICES = [("✨ Auto-detect (recommended)", AUTO)] + [(m,m) for m in METERS]
 
 def _tx(d,sch): return d if sch==_S.DEVANAGARI else _S.transliterate(d,_S.DEVANAGARI,sch)
+# (label, devanagari, display script, meter)  — meter=AUTO unless detection needs help
+_MAL = ("हठलुठ दल घिष्टोत्कण्ठदष्टोष्ठ विद्युत्\nसटशठ कठिनोरः पीठभित्सुष्ठुनिष्ठाम् ।\n"
+        "पठतिनुतव कण्ठाधिष्ठ घोरान्त्रमाला\nदह दह नरसिंहासह्यवीर्याहितं मे ॥")
+_KAR = "कराग्रे वसते लक्ष्मीः करमध्ये सरस्वती ।\nकरमूले तु गोविन्दः प्रभाते करदर्शनम् ॥"
 _SAMPLES = [
- ("Kṛṣṇa — Vasudevasutaṃ (Devanagari)","वासुदेवसुतं देवं कंसचाणूरमर्दनम् ।\nदेवकीपरमानन्दं कृष्णं वन्दे जगद्गुरुम् ॥",_S.DEVANAGARI),
- ("Viṣṇu — Śuklāmbaradharaṃ (Devanagari)","शुक्लाम्बरधरं विष्णुं शशिवर्णं चतुर्भुजम् ।\nप्रसन्नवदनं ध्यायेत् सर्वविघ्नोपशान्तये ॥",_S.DEVANAGARI),
- ("Guru — Gururbrahmā (Kannada script)","गुरुर्ब्रह्मा गुरुर्विष्णुः गुरुर्देवो महेश्वरः ।\nगुरुः साक्षात् परं ब्रह्म तस्मै श्रीगुरवे नमः ॥",_S.KANNADA),
- ("Sarasvatī — Namastubhyaṃ (Telugu script)","सरस्वति नमस्तुभ्यं वरदे कामरूपिणि ।\nविद्यारम्भं करिष्यामि सिद्धिर्भवतु मे सदा ॥",_S.TELUGU),
+ ("Kṛṣṇa — Vasudevasutaṃ (Devanagari)","वासुदेवसुतं देवं कंसचाणूरमर्दनम् ।\nदेवकीपरमानन्दं कृष्णं वन्दे जगद्गुरुम् ॥",_S.DEVANAGARI,AUTO),
+ ("Viṣṇu — Śuklāmbaradharaṃ (Devanagari)","शुक्लाम्बरधरं विष्णुं शशिवर्णं चतुर्भुजम् ।\nप्रसन्नवदनं ध्यायेत् सर्वविघ्नोपशान्तये ॥",_S.DEVANAGARI,AUTO),
+ ("Narasiṃha — retroflex tongue-twister (mālinī)", _MAL, _S.DEVANAGARI, "mālinī"),
+ ("Karāgre vasate — jihvāmūlīya + upadhmānīya", _KAR, _S.DEVANAGARI, AUTO),
+ ("Guru — Gururbrahmā (Kannada script)","गुरुर्ब्रह्मा गुरुर्विष्णुः गुरुर्देवो महेश्वरः ।\nगुरुः साक्षात् परं ब्रह्म तस्मै श्रीगुरवे नमः ॥",_S.KANNADA,AUTO),
+ ("Sarasvatī — Namastubhyaṃ (Telugu script)","सरस्वति नमस्तुभ्यं वरदे कामरूपिणि ।\nविद्यारम्भं करिष्यामि सिद्धिर्भवतु मे सदा ॥",_S.TELUGU,AUTO),
 ]
-EXAMPLES = [[_tx(d,sc), AUTO, 60] for _,d,sc in _SAMPLES]
-EXAMPLE_LABELS = [n for n,_,_ in _SAMPLES]
+EXAMPLES = [[_tx(d,sc), m, 60] for _,d,sc,m in _SAMPLES]
+EXAMPLE_LABELS = [n for n,_,_,_ in _SAMPLES]
 EX_DEFAULT = EXAMPLES[0][0]
 
 def _resolve(name):
