@@ -119,7 +119,6 @@ def syllabify(slp1: str) -> list[dict]:
 
 if __name__ == '__main__':
     import argparse, csv, sys
-    sys.path.insert(0, '<REPO>/Final_Files/Scripts')
     from tts_normalize import normalize
     from tts_g2p import to_slp1
 

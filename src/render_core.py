@@ -10,7 +10,7 @@ Usage:
     r = Renderer(voice_path, voc_path, bank_path, device="cuda")
     sr, audio = r.render_one("तस्मै नमः ...", meter="anuṣṭubh")
 """
-import os, sys, glob, json, numpy as np, torch
+import os, sys, glob, json, re, numpy as np, torch
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -154,6 +154,36 @@ def split_padas(text):
             seg = seg.strip()
             if seg: pieces.append(seg)
     return pieces or ([text.strip()] if text.strip() else [])
+
+
+def detect_meter_key(text):
+    """Best-effort chandas (meter) detection from raw text in ANY Indic script, so a non-technical
+    user need not name the meter. Returns the detected meter name (e.g. 'anushtubh', 'vasantatilaka')
+    which the bank LUT resolves via its wav-stem aliases; 'anushtubh_half' is normalized to
+    'anushtubh'. Returns "" when the verse is partial/unrecognized — the caller then picks the
+    graceful FALLBACK_METER itself and can tell the user it was a guess. Pure text — no GPU. Needs a
+    COMPLETE verse (4 pādas, or 32 syllables for anuṣṭubh) for a confident vṛtta match."""
+    try:
+        from indic_transliteration import sanscript
+        from tts_syllabify import syllabify
+        from tts_weight import tag_weights
+        from tts_meter import detect_meter
+    except Exception:
+        return ""
+    try:
+        d = PT.to_deva(text).replace("॥", "|").replace("।", "|").replace("\n", " | ")
+        d = "".join(c for c in d if not (c.isdigit() or ("०" <= c <= "९")) and c not in "\"'“”‘’()")
+        slp = re.sub(r"\s+", " ", sanscript.transliterate(d, sanscript.DEVANAGARI, sanscript.SLP1)).strip()
+        syls = syllabify(slp)
+        tag_weights(syls)
+        name = detect_meter(syls).get("name", "unknown")
+    except Exception:
+        return ""
+    if name in ("anushtubh_half", "anushtubh"):
+        return "anushtubh"
+    if name in ("unknown", None, ""):
+        return ""
+    return name
 
 
 class Renderer:
