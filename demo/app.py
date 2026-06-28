@@ -72,14 +72,16 @@ def synthesize(text, meter, seed):
 with gr.Blocks(title="Vāgdhenu — Sanskrit chant TTS") as demo:
     gr.Markdown(
         "# Vāgdhenu — Sanskrit chant TTS\n"
-        "Metered Vedic/Purāṇic chant synthesis. Enter **Devanagari** (separate hemistichs with "
-        "`।`/`॥` or newlines), pick the **meter** (chandas) that matches the verse, and render.\n\n"
+        "Metered Vedic/Purāṇic chant synthesis. Enter a verse in **any Indic script** — Devanagari, "
+        "Kannada, Telugu, Malayalam, Bengali, Gujarati, Gurmukhi, Oriya, Grantha (auto-detected & "
+        "transliterated) — separate hemistichs with `।`/`॥` or newlines, pick the **meter** (chandas), "
+        "and render.\n\n"
         "Weights: [`prathoshap/vagdhenu`](https://huggingface.co/prathoshap/vagdhenu) · "
         "Apache-2.0 code / CC-BY-4.0 data."
     )
     with gr.Row():
         with gr.Column(scale=3):
-            txt = gr.Textbox(label="Devanagari text", value=EXAMPLE, lines=4)
+            txt = gr.Textbox(label="Verse (any Indic script)", value=EXAMPLE, lines=4)
         with gr.Column(scale=2):
             meter = gr.Dropdown(METERS, value=METERS[0], label="Meter (chandas)")
             seed = gr.Slider(0, 1000, value=60, step=1, label="Seed")

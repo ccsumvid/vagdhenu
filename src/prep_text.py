@@ -25,15 +25,34 @@ VIS_SIB = {**{c:"स" for c in "सतथ"}, **{c:"श" for c in "शचछ"}, *
 PUNCT_DROP = set("।॥|/\\—–\"'“”‘’„«»‹›*•·().,;!?‌‍")   # daṇḍas, pipe/slash, quotes, parens, ZWJ/ZWNJ
 SKIP = set(" \t\n-") | PUNCT_DROP | set("0123456789०१२३४५६७८९")
 
+# Unicode block -> sanscript scheme, so a shloka in ANY Brahmic script is accepted: it is detected
+# here and transliterated to Devanagari in to_deva(), after which the whole pipeline (which works in
+# Devanagari) is unchanged. First in-block char wins. Roman input (IAST/ITRANS/HK) is NOT auto-detected
+# — pass it pre-transliterated. (Tamil lacks distinct Sanskrit varga letters, so Tamil-script Sanskrit
+# is inherently lossy; Grantha is the faithful Tamil-region script for Sanskrit and IS supported.)
+_SCRIPT_BLOCKS = [
+    (0x0900, 0x097F, sanscript.DEVANAGARI),
+    (0x0980, 0x09FF, sanscript.BENGALI),
+    (0x0A00, 0x0A7F, sanscript.GURMUKHI),
+    (0x0A80, 0x0AFF, sanscript.GUJARATI),
+    (0x0B00, 0x0B7F, sanscript.ORIYA),
+    (0x0B80, 0x0BFF, sanscript.TAMIL),
+    (0x0C00, 0x0C7F, sanscript.TELUGU),
+    (0x0C80, 0x0CFF, sanscript.KANNADA),
+    (0x0D00, 0x0D7F, sanscript.MALAYALAM),
+    (0x11300, 0x1137F, sanscript.GRANTHA),
+]
 def detect_script(t):
     for c in t:
         o = ord(c)
-        if 0x0C80 <= o <= 0x0CFF: return sanscript.KANNADA
-        if 0x0900 <= o <= 0x097F: return sanscript.DEVANAGARI
+        for lo, hi, scheme in _SCRIPT_BLOCKS:
+            if lo <= o <= hi:
+                return scheme
     return sanscript.DEVANAGARI
 
 def to_deva(t):
-    return sanscript.transliterate(t, detect_script(t), sanscript.DEVANAGARI)
+    src = detect_script(t)
+    return t if src == sanscript.DEVANAGARI else sanscript.transliterate(t, src, sanscript.DEVANAGARI)
 
 def fix_colon(deva):
     """Stray Latin colon used as visarga: 'गुरु:-' / 'गुरु:' → 'गुरुः'."""

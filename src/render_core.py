@@ -17,6 +17,11 @@ sys.path.insert(0, HERE)
 import prep_text as PT  # noqa: E402
 
 SR = 24000
+# Unknown/unmatched vṛtta -> render against this meter's reference rather than erroring. An
+# unrecognized verse is almost always a real metered vṛtta we failed to classify, so a flowing
+# 14-syllable triṣṭubh-class reference generalizes better than crashing (or the flat gadya prose
+# template). Resolves via the wav-stem alias in the bank LUT.
+FALLBACK_METER = "vasantatilaka"
 
 # ── helpers copied VERBATIM from render.py ───────────────────────────────────────────────
 def n_aksharas(s):
@@ -211,7 +216,13 @@ class Renderer:
         key = meter.lower().replace(".wav", "")
         if key in self._refcache: return self._refcache[key]
         if key not in self._lut:
-            raise ValueError(f"meter '{meter}' not in bank")
+            if FALLBACK_METER not in self._lut:
+                raise ValueError(f"meter '{meter}' not in bank (and fallback '{FALLBACK_METER}' missing)")
+            print(f"[meter] unknown vṛtta '{meter}' -> fallback '{FALLBACK_METER}'", flush=True)
+            key = FALLBACK_METER
+            if key in self._refcache:
+                self._refcache[meter.lower().replace('.wav', '')] = self._refcache[key]
+                return self._refcache[key]
         e = self._lut[key]
         ref_wav = os.path.join(self._bdir, e["wav"]); ref_text = e["ref_text"]
         sps = float(e.get("sec_per_syll", 0.26))

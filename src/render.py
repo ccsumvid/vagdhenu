@@ -12,6 +12,7 @@ from f5_tts.infer.utils_infer import load_model, load_vocoder, infer_process, pr
 from f5_tts.model import DiT
 CHAMP = os.environ.get("CHAMP_ROOT", os.path.join(REPO, "models"))   # weights land here (scripts/download_weights.py)
 SR = 24000
+FALLBACK_METER = "vasantatilaka"   # unknown/unmatched vṛtta -> this reference instead of erroring (see get_ref)
 
 # ── helpers copied VERBATIM from render_production.py ──────────────────────────────────
 def n_aksharas(s):
@@ -205,7 +206,10 @@ def get_ref(meter):
     key = meter.lower().replace(".wav", "")
     if key in _refcache: return _refcache[key]
     if key not in _lut:
-        raise SystemExit(f"[meter] '{meter}' not in bank")
+        if FALLBACK_METER not in _lut:
+            raise SystemExit(f"[meter] '{meter}' not in bank (and fallback '{FALLBACK_METER}' missing)")
+        print(f"[meter] unknown vṛtta '{meter}' -> fallback '{FALLBACK_METER}'", flush=True)
+        key = FALLBACK_METER
     e = _lut[key]
     ref_wav = os.path.join(_bdir, e["wav"]); ref_text = e["ref_text"]
     sps = float(e.get("sec_per_syll", 0.26))
