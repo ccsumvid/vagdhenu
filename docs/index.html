@@ -191,11 +191,11 @@
 </div>
 <script>
 (function(){
-  // Spread load: send a share of visitors straight to the HF Space (its own GPU pool),
-  // the rest to the dedicated ece A6000 — which itself falls back to HF if unreachable.
+  // ece A6000 only (no per-visitor quota). HF Space kept ONLY as an automatic fallback
+  // if ece is unreachable. (HF_SHARE=0 → no proactive HF routing; it threw ZeroGPU quota notices.)
   var ECE = "https://demo.prathosh.in/?__theme=light";
   var HF  = "https://prathoshap-vagdhenu-demo.hf.space?__theme=light";
-  var HF_SHARE = 0.5;   // fraction of visitors routed to the HF Space (tune as needed)
+  var HF_SHARE = 0.0;   // 0 = everyone on ece (HF only as down-fallback)
   var frame = document.getElementById("demoframe");
   function use(url){ frame.src = url; }
   if (Math.random() < HF_SHARE) { use(HF); return; }
