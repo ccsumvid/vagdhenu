@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vāgdhenu — Codebase Knowledge Graph</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕸️</text></svg>">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <p class="eyebrow">Vāgdhenu · Sanskrit Chant TTS</p>
+      <h1>Codebase Knowledge Graph</h1>
+      <p class="lede">
+        An auto-generated, queryable map of the Vāgdhenu source tree — modules, functions, call
+        relationships, and semantic communities — built locally with
+        <a href="https://github.com/safishamsi/graphify">graphify</a>.
+      </p>
+      <ul class="stats">
+        <li><span class="num">313</span><span class="lab">Nodes</span></li>
+        <li><span class="num">445</span><span class="lab">Edges</span></li>
+        <li><span class="num">22</span><span class="lab">Communities</span></li>
+      </ul>
+    </header>
+
+    <main class="grid">
+      <a class="card" href="graph.html">
+        <div class="ico">🕸️</div>
+        <h2>Interactive graph</h2>
+        <p>Force-directed network. Search nodes, click to inspect neighbors, filter by community.</p>
+      </a>
+      <a class="card" href="callflow.html">
+        <div class="ico">🔀</div>
+        <h2>Call-flow diagrams</h2>
+        <p>Per-module Mermaid architecture &amp; call-flow diagrams with zoom/pan.</p>
+      </a>
+      <a class="card" href="tree.html">
+        <div class="ico">🌳</div>
+        <h2>File-hierarchy tree</h2>
+        <p>Collapsible D3 tree of the repository structure and per-symbol edges.</p>
+      </a>
+      <a class="card" href="GRAPH_REPORT.md">
+        <div class="ico">📊</div>
+        <h2>Graph report</h2>
+        <p>God-nodes, surprising connections, and the 22 named communities in Markdown.</p>
+      </a>
+      <a class="card" href="graph.json">
+        <div class="ico">🧩</div>
+        <h2>Raw graph data</h2>
+        <p>The full <code>graph.json</code> — feed it to <code>graphify query</code> / <code>explain</code>.</p>
+      </a>
+    </main>
+
+    <footer>
+      Generated with <code>graphify</code> · code parsing is fully local (tree-sitter). Interactive
+      views load <code>vis-network</code>/<code>mermaid</code>/<code>d3</code> from a CDN, so they need
+      an internet connection to render. Source:
+      <a href="https://github.com/ccsumvid/vagdhenu">ccsumvid/vagdhenu</a>.
+    </footer>
+  </div>
+</body>
+</html>
