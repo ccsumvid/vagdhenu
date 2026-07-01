@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Vāgdhenu — graphify tree viewer</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f9f9f9;
+      color: #333;
+    }
+    h1 {
+      margin: 20px 0 0 24px;
+      font-size: 2.2rem;
+      font-weight: bold;
+      color: #1e3a56;
+    }
+    .controls {
+      margin: 20px 0 15px 24px;
+    }
+    button {
+      margin-right: 10px;
+      padding: 8px 18px;
+      background: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: background 0.2s ease-in-out;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    button:active {
+      background: #004085;
+    }
+    #tree-container {
+      width: calc(100vw - 48px); /* Adjust for body margin/padding */
+      height: 85vh;
+      overflow: auto;
+      border-radius: 8px;
+      background: #fff;
+      margin-left: 24px;
+      margin-right: 24px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      border: 1px solid #ddd;
+    }
+    svg {
+      background: #fff;
+      border-radius: 8px;
+      display: block; /* Important for D3 */
+    }
+    .node circle {
+      stroke-width: 2.5px;
+    }
+    .node text { /* Base style for the <text> container */
+      font: 13px 'Segoe UI', sans-serif;
+      paint-order: stroke fill; /* Ensures text is readable over lines */
+      stroke: #fff; /* White halo */
+      stroke-width: 3px; /* Halo thickness */
+      stroke-linejoin: round;
+      stroke-opacity: 0.85; /* Halo opacity */
+    }
+    .link {
+      fill: none;
+      stroke-opacity: 0.7;
+      stroke-width: 2px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Vāgdhenu — Knowledge Graph</h1>
+  <div class="controls">
+    <button onclick="expandAll()">Expand All</button>
+    <button onclick="collapseAll()">Collapse All</button>
+    <button onclick="resetView()">Reset View</button>
+  </div>
+  <div id="tree-container">
+    <svg id="tree-svg" width="6000" height="8000"></svg>
+  </div>
+
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script>
+    const initialJsonData = {"name":"V\u0101gdhenu","total_count":278,"children":[{"name":"demo","total_count":15,"children":[{"name":"app.py","total_count":11,"children":[{"name":"_ensure_assets()","total_count":1,"children":[]},{"name":"_ensure_bigvgan()","total_count":1,"children":[]},{"name":"_get_renderer()","total_count":1,"children":[]},{"name":"_render()","total_count":1,"children":[]},{"name":"_resolve_display()","total_count":1,"children":[]},{"name":"_tx()","total_count":1,"children":[]},{"name":"detected meter name -> (pretty bank key, recognized?).","total_count":1,"children":[]},{"name":"Fetch the 2 release weights (CPU-only) + resolve the tokenizer vocab. vocab.txt","total_count":1,"children":[]},{"name":"NVIDIA BigVGAN ships as a repo, not a pip package \u2014 clone it once and put it on","total_count":1,"children":[]},{"name":"synthesize()","total_count":1,"children":[]},{"name":"V\u0101gdhenu \u2014 Sanskrit/chant TTS demo (Hugging Face ZeroGPU Space).  Loads the rele","total_count":1,"children":[]}]},{"name":"server.py","total_count":4,"children":[{"name":"_resolve()","total_count":1,"children":[]},{"name":"_tx()","total_count":1,"children":[]},{"name":"synthesize()","total_count":1,"children":[]},{"name":"V\u0101gdhenu standalone warm server for a dedicated GPU (ece A6000). Loads the model","total_count":1,"children":[]}]}]},{"name":"scripts","total_count":3,"children":[{"name":"download_weights.py","total_count":1,"children":[{"name":"Fetch V\u0101gdhenu weights + the tokenizer vocab.txt into models/.  Everything neede","total_count":1,"children":[]}]},{"name":"setup.sh","total_count":2,"children":[{"name":"PYTHONPATH","total_count":1,"children":[]},{"name":"setup.sh script","total_count":1,"children":[]}]}]},{"name":"src","total_count":195,"children":[{"name":"build_clips.py","total_count":1,"children":[{"name":"Expand mbtn_adh01_manifest.json -> per-hemistich QC clips + 4 round-robin shards","total_count":1,"children":[]}]},{"name":"chandas_labeler.py","total_count":15,"children":[{"name":"_clean()","total_count":1,"children":[]},{"name":"_kn_class()","total_count":1,"children":[]},{"name":"Chandas / ga\u1e47a labeler \u2014 per-ak\u1e63ara laghu(L,1 m\u0101tr\u0101)/guru(G,2 m\u0101tr\u0101) scansion +","total_count":1,"children":[]},{"name":"char_gana_ids()","total_count":1,"children":[]},{"name":"identify()","total_count":1,"children":[]},{"name":"kannada_aksharas()","total_count":1,"children":[]},{"name":"label_verse()","total_count":1,"children":[]},{"name":"Per-char L/G id aligned to kn_text: 0=filler, 1=laghu, 2=guru. Returns (ids, ok,","total_count":1,"children":[]},{"name":"Return (weights list 'L'/'G', n_syllables) for a clean SLP1 string.","total_count":1,"children":[]},{"name":"Return per-p\u0101da list of per-ak\u1e63ara feature dicts:        {aksara, w(L/G), matra,","total_count":1,"children":[]},{"name":"scan()","total_count":1,"children":[]},{"name":"Segment Kannada into ak\u1e63aras \u2192 list of (kind, [char_indices]); kind 'aks' or 'fi","total_count":1,"children":[]},{"name":"Split clean SLP1 into orthographic ak\u1e63aras: [onset consonants][vowel][M/H/~]*. C","total_count":1,"children":[]},{"name":"syllabify_slp1()","total_count":1,"children":[]},{"name":"to_slp1()","total_count":1,"children":[]}]},{"name":"extract_prosody.py","total_count":4,"children":[{"name":"f0_energy()","total_count":1,"children":[]},{"name":"Per-ak\u1e63ara prosody bank \u2014 for each QC-aligned clip, extract F0 (librosa.pyin), e","total_count":1,"children":[]},{"name":"phones_of()","total_count":1,"children":[]},{"name":"span_prosody()","total_count":1,"children":[]}]},{"name":"gana_f5.py","total_count":14,"children":[{"name":"_gana_ids()","total_count":1,"children":[]},{"name":"_swara_ids()","total_count":1,"children":[]},{"name":"add_cond()","total_count":1,"children":[]},{"name":"add_gana()","total_count":1,"children":[]},{"name":"Attach a zero-init ga\u1e47a embedding and rebind forward. n_gana: 0=filler,1=laghu,2","total_count":1,"children":[]},{"name":"Attach zero-init ga\u1e47a(L/G) AND swara(note) embeddings; rebind forward to add bot","total_count":1,"children":[]},{"name":"CFM training forward threading BOTH ga\u1e47a (char_gana_ids, deterministic) and swar","total_count":1,"children":[]},{"name":"CFM training forward with ga\u1e47a threaded \u2014 computes ga\u1e47a from the same text strin","total_count":1,"children":[]},{"name":"cond_cfm_forward()","total_count":1,"children":[]},{"name":"cond_forward()","total_count":1,"children":[]},{"name":"gana_cfm_forward()","total_count":1,"children":[]},{"name":"gana_forward()","total_count":1,"children":[]},{"name":"Ga\u1e47aDiT integration for IndicF5 \u2014 adds a zero-init per-char ga\u1e47a(L/G) embedding","total_count":1,"children":[]},{"name":"Per-char L/G ids for text t, cached (764 unique texts \u2192 scanned once each).","total_count":1,"children":[]}]},{"name":"gana_uni.py","total_count":13,"children":[{"name":".__init__()","total_count":1,"children":[]},{"name":".forward()","total_count":1,"children":[]},{"name":"_durc()","total_count":1,"children":[]},{"name":"_f0c()","total_count":1,"children":[]},{"name":"_padfit()","total_count":1,"children":[]},{"name":"_pick()","total_count":1,"children":[]},{"name":"add_cond_uni()","total_count":1,"children":[]},{"name":"Attach ga\u1e47a embed + continuous F0 encoder + continuous duration encoder (all zer","total_count":1,"children":[]},{"name":"cond_cfm_forward_uni()","total_count":1,"children":[]},{"name":"cond_forward_uni()","total_count":1,"children":[]},{"name":"ContEncode","total_count":1,"children":[]},{"name":"Continuous scalar (per char) \u2192 text-dim vector. Fourier features + MLP, zero-ini","total_count":1,"children":[]},{"name":"Unified continuous prosody conditioner for IndicF5: ga\u1e47a(L/G) + continuous F0 (p","total_count":1,"children":[]}]},{"name":"limits.py","total_count":9,"children":[{"name":"_n_aksharas()","total_count":1,"children":[]},{"name":"Abuse guards shared by the demo server (ece) and the HF Space:  - one shloka per","total_count":1,"children":[]},{"name":"check_and_count()","total_count":1,"children":[]},{"name":"client_ip()","total_count":1,"children":[]},{"name":"Count Devanagari/Kannada ak\u1e63aras (independent vowels + non-vir\u0101ma-killed consona","total_count":1,"children":[]},{"name":"Real visitor IP \u2014 prefer Cloudflare's header (tunnel), then X-Forwarded-For, the","total_count":1,"children":[]},{"name":"Return an error message if the input is not a single shloka, else None.","total_count":1,"children":[]},{"name":"True if under today's limit (and records the use); False if the daily quota is e","total_count":1,"children":[]},{"name":"validate_one_shloka()","total_count":1,"children":[]}]},{"name":"prep_text.py","total_count":27,"children":[{"name":"_next_real()","total_count":1,"children":[]},{"name":"align_slp1()","total_count":1,"children":[]},{"name":"Apply visarga + anusv\u0101ra conversions on a da\u1e47\u1e0da/number-stripped Devanagari strin","total_count":1,"children":[]},{"name":"Chant echo-vowel for the segment-final visarga: \u1e25 \u2192 h + the preceding vowel.","total_count":1,"children":[]},{"name":"Colon\u2192visarga, remove da\u1e47\u1e0das/pipes/slashes/quotes/digits, hyphen\u2192space; avagraha","total_count":1,"children":[]},{"name":"detect_script()","total_count":1,"children":[]},{"name":"fix_colon()","total_count":1,"children":[]},{"name":"Index of next non-skip char after position i, or None.","total_count":1,"children":[]},{"name":"Kannada-safe NORMALIZED path (A/B Arm B): E48 sandhi minus jihv\u0101m\u016bl\u012bya/upadhm\u0101n\u012b","total_count":1,"children":[]},{"name":"mfa_text()","total_count":1,"children":[]},{"name":"model_text()","total_count":1,"children":[]},{"name":"model_text_norm()","total_count":1,"children":[]},{"name":"model_text_sandhi()","total_count":1,"children":[]},{"name":"Phonetic Devanagari (visarga/anusv\u0101ra conversions) \u2014 annotation for a future pho","total_count":1,"children":[]},{"name":"phonetic_mfa()","total_count":1,"children":[]},{"name":"PLAIN champion path (A/B Arm A): strip punct, transliterate Deva\u2192Kannada, NO san","total_count":1,"children":[]},{"name":"Plain SLP1 for MFA forced-alignment (model-native convention: visarga=H, anusv\u0101r","total_count":1,"children":[]},{"name":"PRODUCTION normalizer: strip punct \u2192 Deva\u2192SLP1 \u2192 visarga sandhi (utva/rutva/lopa","total_count":1,"children":[]},{"name":"SLP1 word \u2192 space-joined phone list (SLP1 is phonemic: 1 char = 1 phone).","total_count":1,"children":[]},{"name":"Stray Latin colon used as visarga: '\u0917\u0941\u0930\u0941:-' / '\u0917\u0941\u0930\u0941:' \u2192 '\u0917\u0941\u0930\u0941\u0903'.","total_count":1,"children":[]},{"name":"strip_punct()","total_count":1,"children":[]},{"name":"Text prep for the Prathosh voice fine-tune. Two outputs per verse:   - model_tex","total_count":1,"children":[]},{"name":"to_deva()","total_count":1,"children":[]},{"name":"visarga_echo_final()","total_count":1,"children":[]},{"name":"visarga_sandhi()","total_count":1,"children":[]},{"name":"Word-boundary visarga sandhi \u2014 utva/rutva/lopa ONLY (the sandhi that WAS resolve","total_count":1,"children":[]},{"name":"word_phones()","total_count":1,"children":[]}]},{"name":"render.py","total_count":22,"children":[{"name":".__init__()","total_count":1,"children":[]},{"name":".decode()","total_count":1,"children":[]},{"name":"_aksharas()","total_count":1,"children":[]},{"name":"_anusvara_m()","total_count":1,"children":[]},{"name":"_danda_fix()","total_count":1,"children":[]},{"name":"_ends_halant()","total_count":1,"children":[]},{"name":"_hna_metathesis()","total_count":1,"children":[]},{"name":"_rep_depths()","total_count":1,"children":[]},{"name":"_resplit_padawise()","total_count":1,"children":[]},{"name":"_satva()","total_count":1,"children":[]},{"name":"_stitch()","total_count":1,"children":[]},{"name":"_vocalic_l()","total_count":1,"children":[]},{"name":"bvgan()","total_count":1,"children":[]},{"name":"Cap","total_count":1,"children":[]},{"name":"gate()","total_count":1,"children":[]},{"name":"get_ref()","total_count":1,"children":[]},{"name":"h + retroflex/dental nasal conjunct -> nasal + h (\u0cb9\u0ccd\u0ca3->\u0ca3\u0ccd\u0cb9, \u0cb9\u0ccd\u0ca8->\u0ca8\u0ccd\u0cb9). F5 strugg","total_count":1,"children":[]},{"name":"n_aksharas()","total_count":1,"children":[]},{"name":"PERSISTENT BATCH renderer \u2014 load DiT+BigVGAN ONCE, loop over a shard of per-hemi","total_count":1,"children":[]},{"name":"render_clip()","total_count":1,"children":[]},{"name":"Trim F5 padding-silence/edge-artifacts to tight speech bounds (+ click-fades). f","total_count":1,"children":[]},{"name":"Vocalic \u1e37/\u1e39 (\u090c, \u0915\u0962) -> traditional 'l\u1e5b' rendering: matra \u0ce2->\u0ccd\u0cb2\u0cc3, \u0ce3->\u0ccd\u0cb2\u0cc4; indepen","total_count":1,"children":[]}]},{"name":"render_candidates.py","total_count":6,"children":[{"name":".__init__()","total_count":1,"children":[]},{"name":".decode()","total_count":1,"children":[]},{"name":"bvgan()","total_count":1,"children":[]},{"name":"Cap","total_count":1,"children":[]},{"name":"gate()","total_count":1,"children":[]},{"name":"Render each hemistich as K seed-candidates (separate files), gold pipeline + Big","total_count":1,"children":[]}]},{"name":"render_core.py","total_count":24,"children":[{"name":".__init__()","total_count":1,"children":[]},{"name":"._bvgan()","total_count":1,"children":[]},{"name":"._get_ref()","total_count":1,"children":[]},{"name":"._stitch()","total_count":1,"children":[]},{"name":".meters()","total_count":1,"children":[]},{"name":".render_one()","total_count":1,"children":[]},{"name":"_aksharas()","total_count":1,"children":[]},{"name":"_anusvara_m()","total_count":1,"children":[]},{"name":"_danda_fix()","total_count":1,"children":[]},{"name":"_ends_halant()","total_count":1,"children":[]},{"name":"_hna_metathesis()","total_count":1,"children":[]},{"name":"_rep_depths()","total_count":1,"children":[]},{"name":"_satva()","total_count":1,"children":[]},{"name":"_vocalic_l()","total_count":1,"children":[]},{"name":"Best-effort chandas (meter) detection from raw text in ANY Indic script, so a no","total_count":1,"children":[]},{"name":"detect_meter_key()","total_count":1,"children":[]},{"name":"gate()","total_count":1,"children":[]},{"name":"Loads DiT + vocos + BigVGAN + the reference bank ONCE; render_one() synthesizes","total_count":1,"children":[]},{"name":"n_aksharas()","total_count":1,"children":[]},{"name":"Renderer","total_count":1,"children":[]},{"name":"Reusable render core for V\u0101gdhenu \u2014 the gold per-hemistich pipeline as a callabl","total_count":1,"children":[]},{"name":"Split a free-text shloka into hemistich/pada pieces: newlines first, then dandas","total_count":1,"children":[]},{"name":"split_padas()","total_count":1,"children":[]},{"name":"Synthesize one shloka. text = free Devanagari (split into padas on newline/danda","total_count":1,"children":[]}]},{"name":"render_production.py","total_count":31,"children":[{"name":".__init__()","total_count":1,"children":[]},{"name":".decode()","total_count":1,"children":[]},{"name":"_aksharas()","total_count":1,"children":[]},{"name":"_anusvara_m()","total_count":1,"children":[]},{"name":"_basetext()","total_count":1,"children":[]},{"name":"_danda_fix()","total_count":1,"children":[]},{"name":"_ends_halant()","total_count":1,"children":[]},{"name":"_hna_metathesis()","total_count":1,"children":[]},{"name":"_rep_depths()","total_count":1,"children":[]},{"name":"_resplit_padawise()","total_count":1,"children":[]},{"name":"_satva()","total_count":1,"children":[]},{"name":"_self_double()","total_count":1,"children":[]},{"name":"_stitch()","total_count":1,"children":[]},{"name":"_tanpura()","total_count":1,"children":[]},{"name":"_vocalic_l()","total_count":1,"children":[]},{"name":"_warp_bands()","total_count":1,"children":[]},{"name":"Anusvara \u0c82 -> homorganic nasal of the FOLLOWING consonant (looks past spaces / w","total_count":1,"children":[]},{"name":"At a da\u1e47\u1e0da (segment end): anusvara -> m (always). Visarga -> ha/hi/hu echo ONLY","total_count":1,"children":[]},{"name":"bvgan()","total_count":1,"children":[]},{"name":"Cap","total_count":1,"children":[]},{"name":"Chorus 2-voice: phase-aligned pitch-shifted copy + LFO-modulated fractional dela","total_count":1,"children":[]},{"name":"Count syllable nuclei (Devanagari/Kannada): independent vowels + consonants not","total_count":1,"children":[]},{"name":"gate()","total_count":1,"children":[]},{"name":"h + retroflex/dental nasal conjunct -> nasal + h (\u0cb9\u0ccd\u0ca3->\u0ca3\u0ccd\u0cb9, \u0cb9\u0ccd\u0ca8->\u0ca8\u0ccd\u0cb9). F5 strugg","total_count":1,"children":[]},{"name":"Internal visarga before c/ch, \u1e6d/\u1e6dh, t/th -> \u015b/\u1e63/s + the consonant (satva, joined","total_count":1,"children":[]},{"name":"n_aksharas()","total_count":1,"children":[]},{"name":"PRODUCTION renderer \u2014 Prathosh Sanskrit chant TTS. Gold pipeline: voice_armA_ema","total_count":1,"children":[]},{"name":"Shift F5 mel along the 100-mel-band axis by `delta` bands (>0 = lower/bigger voi","total_count":1,"children":[]},{"name":"Synthesized tanpura (Pa-Sa-Sa-Sa, jawari buzz) tuned to the chant's Sa, mixed un","total_count":1,"children":[]},{"name":"Trim F5 padding-silence/edge-artifacts to tight speech bounds (+ click-fades) fo","total_count":1,"children":[]},{"name":"Vocalic \u1e37/\u1e39 -> 'l\u1e5b' rendering: \u0ce2->\u0ccd\u0cb2\u0cc3, \u0ce3->\u0ccd\u0cb2\u0cc4, \u0c8c->\u0cb2\u0cc3, \u0ce1->\u0cb2\u0cc4. Rare (\u221a\u0915\u094d\u0932\u0943\u092a\u094d, \u0905\u091a\u0940\u0915","total_count":1,"children":[]}]},{"name":"tts_g2p.py","total_count":1,"children":[{"name":"to_slp1()","total_count":1,"children":[]}]},{"name":"tts_meter.py","total_count":13,"children":[{"name":"_match_meter()","total_count":1,"children":[]},{"name":"_match_pada()","total_count":1,"children":[]},{"name":"analyze()","total_count":1,"children":[]},{"name":"Assign pada_index / pos_in_pada / pos_in_pada_norm to each syllable.      Syllab","total_count":1,"children":[]},{"name":"assign_pada_positions()","total_count":1,"children":[]},{"name":"detect_meter()","total_count":1,"children":[]},{"name":"Full meter analysis: mark sutras, detect meter on shloka-only, assign positions.","total_count":1,"children":[]},{"name":"Identify and mark sutra spans within the syllable stream.      A sutra block in","total_count":1,"children":[]},{"name":"mark_sutras()","total_count":1,"children":[]},{"name":"Match observed p\u0101da weight string against template. Last position is anceps.","total_count":1,"children":[]},{"name":"Pattern is the full GL-string. Split into 4 p\u0101das of plen, each must match any t","total_count":1,"children":[]},{"name":"Return meter info: {name, pada_length, num_padas, padas}.      Operates on the F","total_count":1,"children":[]},{"name":"run()","total_count":1,"children":[]}]},{"name":"tts_normalize.py","total_count":7,"children":[{"name":"collapse_ws()","total_count":1,"children":[]},{"name":"expand_om()","total_count":1,"children":[]},{"name":"normalize()","total_count":1,"children":[]},{"name":"rewrite_anusvara()","total_count":1,"children":[]},{"name":"rewrite_visarga()","total_count":1,"children":[]},{"name":"strip_editorial()","total_count":1,"children":[]},{"name":"strip_numerals()","total_count":1,"children":[]}]},{"name":"tts_syllabify.py","total_count":3,"children":[{"name":"_is_consonant()","total_count":1,"children":[]},{"name":"show()","total_count":1,"children":[]},{"name":"syllabify()","total_count":1,"children":[]}]},{"name":"tts_weight.py","total_count":4,"children":[{"name":"_cluster_chars()","total_count":1,"children":[]},{"name":"Drop nasalization diacritics from a cluster string.","total_count":1,"children":[]},{"name":"show()","total_count":1,"children":[]},{"name":"tag_weights()","total_count":1,"children":[]}]},{"name":"inspect_bank.py","total_count":1,"children":[]}]},{"name":"training","total_count":65,"children":[{"name":"align_indic_conformer.py","total_count":11,"children":[{"name":"25 fps \u2192 40 fps via cumulative-endpoint scaling.","total_count":1,"children":[]},{"name":"align_one()","total_count":1,"children":[]},{"name":"conformer_frame_to_attn_frame()","total_count":1,"children":[]},{"name":"Devanagari \u2192 Sanskrit BPE token ids using the model's tokenizer.","total_count":1,"children":[]},{"name":"Forward audio \u2192 CTC log-probs (T, V). Resamples to 16 kHz first.","total_count":1,"children":[]},{"name":"get_ctc_log_probs()","total_count":1,"children":[]},{"name":"load_model()","total_count":1,"children":[]},{"name":"main()","total_count":1,"children":[]},{"name":"mode='pilot' returns 30 stratified clips; mode='full' returns all eligible.","total_count":1,"children":[]},{"name":"select_clips()","total_count":1,"children":[]},{"name":"tokenize_reference()","total_count":1,"children":[]}]},{"name":"bigvgan_vocoder_train.py","total_count":7,"children":[{"name":".__getitem__()","total_count":1,"children":[]},{"name":".__init__()","total_count":1,"children":[]},{"name":".__len__()","total_count":1,"children":[]},{"name":"main()","total_count":1,"children":[]},{"name":"mel_spectrogram()","total_count":1,"children":[]},{"name":"Standalone BigVGAN vocoder (mel -> audio) for Matcha-TTS Sanskrit. Reuses VITS2","total_count":1,"children":[]},{"name":"VocDS","total_count":1,"children":[]}]},{"name":"download_sanskrit_corpus.py","total_count":13,"children":[{"name":".__init__()","total_count":1,"children":[]},{"name":".handle_starttag()","total_count":1,"children":[]},{"name":"_LinkHarvester","total_count":1,"children":[]},{"name":"download_dsbc()","total_count":1,"children":[]},{"name":"download_gretil()","total_count":1,"children":[]},{"name":"download_one()","total_count":1,"children":[]},{"name":"download_sangraha()","total_count":1,"children":[]},{"name":"DSBC files are small + dispersed; minimal grab.     The main collection is at ds","total_count":1,"children":[]},{"name":"fetch_url()","total_count":1,"children":[]},{"name":"GRETIL is a multi-page hub. Crawl the index + per-section pages to find all .txt","total_count":1,"children":[]},{"name":"harvest_gretil_links()","total_count":1,"children":[]},{"name":"main()","total_count":1,"children":[]},{"name":"Sangraha is on HuggingFace: ai4bharat/sangraha. Sanskrit split: language 'san' o","total_count":1,"children":[]}]},{"name":"finetune_indicf5.py","total_count":1,"children":[{"name":"Fine-tune IndicF5 (F5/flow-matching) on pilot_reciter 5h. Warm-start from the GR","total_count":1,"children":[]}]},{"name":"indicf5_clone.py","total_count":1,"children":[{"name":"IndicF5 zero-shot voice-cloning feasibility test for Sanskrit. Clone pilot_recit","total_count":1,"children":[]}]},{"name":"indicf5_grnfix.py","total_count":5,"children":[{"name":".__init__()","total_count":1,"children":[]},{"name":".forward()","total_count":1,"children":[]},{"name":"Fix: monkeypatch GRN to weight/bias (matching the IndicF5 checkpoint) BEFORE loa","total_count":1,"children":[]},{"name":"GRN_wb","total_count":1,"children":[]},{"name":"kn()","total_count":1,"children":[]}]},{"name":"parse_conformer_to_npy.py","total_count":2,"children":[{"name":"main()","total_count":1,"children":[]},{"name":"parse_one()","total_count":1,"children":[]}]},{"name":"phase2_finetune.py","total_count":7,"children":[{"name":".__getitem__()","total_count":1,"children":[]},{"name":".__init__()","total_count":1,"children":[]},{"name":".__len__()","total_count":1,"children":[]},{"name":"main()","total_count":1,"children":[]},{"name":"mel_spectrogram()","total_count":1,"children":[]},{"name":"P2DS","total_count":1,"children":[]},{"name":"Rung 1 \u2014 Phase-2 vocoder fine-tune: map Matcha's PREDICTED (teacher-forced, GT-a","total_count":1,"children":[]}]},{"name":"phonemize_corpus.py","total_count":11,"children":[{"name":"chunk_text()","total_count":1,"children":[]},{"name":"collect_files()","total_count":1,"children":[]},{"name":"detect_script()","total_count":1,"children":[]},{"name":"main()","total_count":1,"children":[]},{"name":"quality_ok()","total_count":1,"children":[]},{"name":"Reject low-quality docs (mostly for OCR'd Sangraha).","total_count":1,"children":[]},{"name":"Return 'devanagari', 'iast', or 'unknown'.","total_count":1,"children":[]},{"name":"shannon_entropy()","total_count":1,"children":[]},{"name":"Split very long documents into sentence-like chunks for MLM training.","total_count":1,"children":[]},{"name":"to_devanagari()","total_count":1,"children":[]},{"name":"Transliterate to Devanagari if needed.","total_count":1,"children":[]}]},{"name":"tts_build_training.py","total_count":3,"children":[{"name":"build_row()","total_count":1,"children":[]},{"name":"main()","total_count":1,"children":[]},{"name":"Process one source CSV row. Returns (flat_dict, jsonl_dict).","total_count":1,"children":[]}]},{"name":"tts_weight.py","total_count":4,"children":[{"name":"_cluster_chars()","total_count":1,"children":[]},{"name":"Drop nasalization diacritics from a cluster string.","total_count":1,"children":[]},{"name":"show()","total_count":1,"children":[]},{"name":"tag_weights()","total_count":1,"children":[]}]}]}]};
+
+    function transformData(jsonData) {
+        // Helper function to recursively build the children structure
+        function processNode(node, parentL1StageName) {
+            let displayName = node.name;
+            // Append total_count if it exists and is not already in the name
+            if (node.total_count !== undefined) {
+                if (!/\(Total Count: \d+\)$/.test(displayName)) {
+                    displayName += ` (Total Count: ${node.total_count})`;
+                }
+            }
+
+            const newNode = { name: displayName };
+
+            if (parentL1StageName === "Root") {
+                 newNode.originalStageName = node.name;
+            } else {
+                newNode.originalStageName = parentL1StageName;
+            }
+
+            if (node.children && node.children.length > 0) {
+                const stageNameToPass = (parentL1StageName === "Root") ? node.name : parentL1StageName;
+                newNode.children = node.children.map(child => processNode(child, stageNameToPass));
+            }
+
+            return newNode;
+        }
+
+        let rootDisplayName = jsonData.name;
+        if (jsonData.total_count !== undefined && !/\(Total Count: \d+\)$/.test(rootDisplayName)) {
+            rootDisplayName += ` (Total Count: ${jsonData.total_count})`;
+        }
+
+        return {
+            name: rootDisplayName,
+            originalStageName: "Root",
+            children: (jsonData.children || []).map(child => processNode(child, "Root"))
+        };
+    }
+
+    const treeData = transformData(initialJsonData);
+
+    // Auto-populated phaseColors: every depth-1 child of the root gets
+    // a stable colour from a bigger palette so all top-level dirs are
+    // distinguishable.
+    const PALETTE = [
+      ["#3498DB","#2980B9","#AED6F1"], ["#2ECC71","#27AE60","#A9DFBF"],
+      ["#E74C3C","#C0392B","#F5B7B1"], ["#9B59B6","#8E44AD","#D7BDE2"],
+      ["#F39C12","#D68910","#FAD7A0"], ["#1ABC9C","#117864","#A2D9CE"],
+      ["#34495E","#1B2631","#ABB2B9"], ["#E67E22","#BA4A00","#F5CBA7"],
+      ["#16A085","#0E6655","#A2D9CE"], ["#D35400","#A04000","#EDBB99"],
+      ["#7F8C8D","#566573","#D5DBDB"], ["#C0392B","#7B241C","#F5B7B1"],
+      ["#2E86C1","#1B4F72","#A9CCE3"], ["#28B463","#196F3D","#A9DFBF"],
+      ["#AF7AC5","#6C3483","#D2B4DE"],
+    ];
+    const phaseColors = { "Root": { fill: "#4A4A4A", stroke: "#333333", collapsedFill: "#6C757D" },
+                          "Default": { fill: "#BDC3C7", stroke: "#95A5A6", collapsedFill: "#ECF0F1" } };
+    (initialJsonData.children || []).forEach((c, i) => {
+      const pal = PALETTE[i % PALETTE.length];
+      phaseColors[c.name] = { fill: pal[0], stroke: pal[1], collapsedFill: pal[2] };
+    });
+
+    const levelSpecificPalettes = {
+      0: { fill: "#4A4A4A", stroke: "#333333", collapsedFill: "#6C757D" },
+      2: { fill: "#6ab04c", stroke: "#508a38", collapsedFill: "#a3d391" },
+      3: { fill: "#f0932b", stroke: "#d0730f", collapsedFill: "#f6c07e" },
+      4: { fill: "#be2edd", stroke: "#a01cb3", collapsedFill: "#e08bf2" },
+      5: { fill: "#00a8ff", stroke: "#007ac1", collapsedFill: "#74d2ff" },
+      6: { fill: "#e55039", stroke: "#c23620", collapsedFill: "#f09a8d" },
+      default: { fill: "#747d8c", stroke: "#57606f", collapsedFill: "#a4b0be" }
+    };
+
+    const svgElement = d3.select("#tree-svg");
+    const initialSvgWidth = +svgElement.attr("width");
+    const initialSvgHeight = +svgElement.attr("height");
+    const margin = { top: 40, right: 120, bottom: 80, left: 450 };
+    let width = initialSvgWidth - margin.left - margin.right;
+    let height = initialSvgHeight - margin.top - margin.bottom;
+    const duration = 500;
+    let nodeCounter = 0;
+    const g = svgElement.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+    const treemap = d3.tree().nodeSize([40, 0]);
+    let rootNode = d3.hierarchy(treeData, d => d.children);
+    rootNode.x0 = 0;
+    rootNode.y0 = 0;
+
+    if (rootNode.children) {
+      rootNode.children.forEach(d_child => {
+        if (d_child.children) { collapseBranch(d_child); }
+      });
+    }
+    updateTree(rootNode);
+
+    function collapseBranch(d) { if (d.children) { d._children = d.children; d._children.forEach(collapseBranch); d.children = null; } }
+    function expandBranch(d) { if (d._children) { d.children = d._children; d._children = null; } if (d.children) { d.children.forEach(expandBranch); } }
+    window.expandAll = () => { expandBranch(rootNode); updateTree(rootNode); };
+    window.collapseAll = () => { if (rootNode.children) { rootNode.children.forEach(collapseBranch); } updateTree(rootNode); };
+    window.resetView = () => { if (rootNode.children) { rootNode.children.forEach(d_child => { if (d_child.children || d_child._children) { collapseBranch(d_child); } }); } if (rootNode._children && !rootNode.children) { rootNode.children = rootNode._children; rootNode._children = null; } updateTree(rootNode); };
+
+    function updateTree(source) {
+      const treeLayoutData = treemap(rootNode);
+      let nodes = treeLayoutData.descendants();
+      let links = treeLayoutData.descendants().slice(1);
+
+      let minX = 0;
+      let maxX = 0;
+      if (nodes.length > 0) {
+        minX = d3.min(nodes, d => d.x);
+        maxX = d3.max(nodes, d => d.x);
+      }
+
+      let neededHeight = Math.max(initialSvgHeight, maxX - minX + margin.top + margin.bottom + 100);
+      svgElement.transition().duration(duration / 2).attr("height", neededHeight);
+      g.transition().duration(duration / 2).attr("transform", `translate(${margin.left},${margin.top - minX + 40})`);
+
+      nodes.forEach(d => { d.y = d.depth * 400; }); // Adjust horizontal separation if needed
+
+      const node = g.selectAll('g.node').data(nodes, d => d.id || (d.id = ++nodeCounter));
+      const nodeEnter = node.enter().append('g')
+        .attr('class', d => "node" + (d.children || d._children ? " node--internal" : " node--leaf") + (d._children ? " _children" : ""))
+        .attr('transform', d => `translate(${source.y0},${source.x0})`)
+        .on('click', (event, d) => { if (d.children) { d._children = d.children; d.children = null; } else if (d._children) { d.children = d._children; d._children = null; } updateTree(d); })
+        .style('cursor', d => (d.children || d._children) ? 'pointer' : 'default');
+
+      nodeEnter.append('circle').attr('r', 1e-6);
+
+      nodeEnter.append('text')
+        .attr('dy', '.35em')
+        .attr('x', d => d.children || d._children ? -14 : 14)
+        .attr('text-anchor', d => d.children || d._children ? 'end' : 'start')
+        .style("fill-opacity", 1e-6)
+        .call(wrapText, 380);
+
+      const nodeUpdate = nodeEnter.merge(node);
+      nodeUpdate.transition().duration(duration)
+        .attr('transform', d => `translate(${d.y},${d.x})`)
+        .attr('class', d => "node" + (d.children ? " node--internal" : " node--leaf") + (d._children ? " node--internal _children" : ""));
+
+      nodeUpdate.select('circle').attr('r', 8.5)
+        .style('fill', d => {
+            let palette;
+            if (d.depth === 0) {
+                palette = levelSpecificPalettes[0];
+            } else if (d.depth === 1) {
+                palette = phaseColors[d.data.originalStageName] || phaseColors.Default;
+            } else {
+                palette = levelSpecificPalettes[d.depth] || levelSpecificPalettes.default;
+            }
+            if (d._children) return palette.collapsedFill;
+            if (d.children) return palette.fill;
+            return "#fff";
+        })
+        .style('stroke', d => {
+            let palette;
+            if (d.depth === 0) {
+                palette = levelSpecificPalettes[0];
+            } else if (d.depth === 1) {
+                palette = phaseColors[d.data.originalStageName] || phaseColors.Default;
+            } else {
+                palette = levelSpecificPalettes[d.depth] || levelSpecificPalettes.default;
+            }
+            return palette.stroke;
+        });
+      nodeUpdate.select('text').style("fill-opacity", 1).call(wrapText, 380);
+
+      const nodeExit = node.exit().transition().duration(duration).attr('transform', d => `translate(${source.y},${source.x})`).remove();
+      nodeExit.select('circle').attr('r', 1e-6);
+      nodeExit.select('text').style('fill-opacity', 1e-6);
+
+      const link = g.selectAll('path.link').data(links, d => d.id);
+      const linkEnter = link.enter().insert('path', "g").attr('class', 'link').attr('d', d => { const o = { x: source.x0, y: source.y0 }; return diagonal(o, o); });
+
+      linkEnter.merge(link).transition().duration(duration).attr('d', d => diagonal(d, d.parent))
+        .style('stroke', d => {
+            const sourceNode = d.parent;
+            if (!sourceNode) return phaseColors.Default.stroke;
+            const l1AncestorName = sourceNode.data.originalStageName;
+            const colorPalette = phaseColors[l1AncestorName] || phaseColors.Default;
+            return colorPalette.stroke;
+        });
+      link.exit().transition().duration(duration).attr('d', d => { const o = { x: source.x, y: source.y }; return diagonal(o, o); }).remove();
+      nodes.forEach(d => { d.x0 = d.x; d.y0 = d.y; });
+    }
+
+    function diagonal(s, d) { return `M ${s.y} ${s.x} C ${(s.y + d.y) / 2} ${s.x}, ${(s.y + d.y) / 2} ${d.x}, ${d.y} ${d.x}`; }
+
+    function wrapText(textElements, maxWidth) {
+        const textPartColors = {
+            name: '#343a40',
+            count: '#0056b3'
+        };
+        const countRegex = /(\s\(Total Count: \d+\))$/;
+
+        textElements.each(function () {
+            const textD3 = d3.select(this);
+            const originalNodeText = textD3.datum().data.name;
+            const x = parseFloat(textD3.attr("x") || 0);
+            const initialDy = textD3.attr("dy");
+            const textAnchor = textD3.attr("text-anchor");
+            const lineHeight = 1.1;
+
+            textD3.text(null);
+
+            let namePart = originalNodeText;
+            let countPartText = "";
+
+            const countMatch = originalNodeText.match(countRegex);
+            if (countMatch && originalNodeText.endsWith(countMatch[0])) {
+                namePart = originalNodeText.substring(0, originalNodeText.length - countMatch[0].length).trim();
+                countPartText = countMatch[0].trim();
+            }
+
+            const tokens = [];
+            namePart.split(/\s+/).filter(Boolean).forEach(word => {
+                tokens.push({ text: word, type: 'name' });
+            });
+            if (countPartText) {
+                tokens.push({ text: countPartText, type: 'count' });
+            }
+
+            if (tokens.length === 0 && originalNodeText) {
+                tokens.push({ text: originalNodeText, type: 'name' });
+            }
+
+            let currentTspan = textD3.append("tspan").attr("x", x).attr("dy", initialDy);
+            if (textAnchor === "end") currentTspan.attr("text-anchor", "end");
+
+            let lineTokens = [];
+
+            for (let i = 0; i < tokens.length; i++) {
+                const tokenObj = tokens[i];
+
+                lineTokens.push(tokenObj);
+                currentTspan.text(lineTokens.map(t => t.text).join(" "));
+
+                if (currentTspan.node().getComputedTextLength() > maxWidth && lineTokens.length > 1) {
+                    lineTokens.pop();
+
+                    currentTspan.text(null);
+                    lineTokens.forEach((prevToken, idx) => {
+                        currentTspan.append("tspan")
+                            .text((idx > 0 ? " " : "") + prevToken.text)
+                            .style("fill", textPartColors[prevToken.type] || textPartColors.name)
+                            .style("font-weight", prevToken.type === 'count' ? "bold" : "normal");
+                    });
+
+                    lineTokens = [tokenObj];
+                    currentTspan = textD3.append("tspan").attr("x", x).attr("dy", lineHeight + "em");
+                    if (textAnchor === "end") currentTspan.attr("text-anchor", "end");
+                }
+            }
+
+            currentTspan.text(null);
+            lineTokens.forEach((token, idx) => {
+                currentTspan.append("tspan")
+                    .text((idx > 0 ? " " : "") + token.text)
+                    .style("fill", textPartColors[token.type] || textPartColors.name)
+                    .style("font-weight", token.type === 'count' ? "bold" : "normal");
+            });
+
+            if (textD3.selectAll("tspan > tspan").empty() && textD3.select("tspan").text().length === 0 && originalNodeText) {
+                let t = textD3.select("tspan");
+                let displayText = originalNodeText;
+                t.text(displayText).style("fill", textPartColors.name);
+                if (t.node() && t.node().getComputedTextLength() > maxWidth && displayText.length > 20) {
+                    let estimatedChars = Math.floor(maxWidth / (t.node().getComputedTextLength()/displayText.length) );
+                    displayText = displayText.substring(0, Math.max(0, estimatedChars - 3)) + "...";
+                    t.text(displayText);
+                }
+            }
+        });
+    }
+  </script>
+</body>
+</html>
