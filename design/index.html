@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vāgdhenu — A Second Voice · Design Plan</title>
+<meta name="description" content="Design plan for adding a second reciter's voice to Vāgdhenu via per-voice packs: fine-tuned checkpoint + per-meter reference bank, selectable at render time.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Noto+Serif+Devanagari:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="design.css">
+</head>
+<body>
+
+<header class="hero">
+  <p class="sanskrit">द्वितीयः स्वरः</p>
+  <h1>A Second Voice <span class="amp">for Vāgdhenu</span></h1>
+  <p class="tag">Voice packs: one fine-tuned checkpoint and one per-meter reference bank per reciter, selectable at render time — the chant behavior carries over unchanged.</p>
+  <p class="meta">Design plan · 2026-07-30 <span class="status">approved</span></p>
+  <div class="voice-legend" role="list" aria-label="Voice color key used throughout this page">
+    <span class="voice-chip pilot" role="listitem"><span class="dot" aria-hidden="true"></span> pilot — the shipped voice</span>
+    <span class="voice-chip r2" role="listitem"><span class="dot" aria-hidden="true"></span> reciter-2 — the new voice</span>
+    <span class="voice-chip shared" role="listitem"><span class="dot" aria-hidden="true"></span> shared infrastructure</span>
+  </div>
+</header>
+
+<main class="wrap">
+
+<section id="decision">
+  <h2>Decision</h2>
+  <p class="lead">Three routes were weighed; voice packs won on safety and extensibility.</p>
+  <div class="decision">
+    <div class="dcard chosen">
+      <span class="verdict">chosen</span>
+      <h3>Voice packs</h3>
+      <p>Per-voice checkpoint + per-voice reference bank. Zero risk to the shipped MOS-4.6 voice; voices fully independent; extends naturally to more reciters.</p>
+    </div>
+    <div class="dcard rejected">
+      <span class="verdict">later, maybe</span>
+      <h3>One multi-reciter model</h3>
+      <p>Single checkpoint on both corpora; reference clip selects the voice. Moves toward voice-agnostic chant, but risks regressing the shipped voice. A research track once packs are stable.</p>
+    </div>
+    <div class="dcard rejected">
+      <span class="verdict">rejected</span>
+      <h3>Zero-shot reference swap</h3>
+      <p>No training — a new-voice bank on existing weights. Single-speaker weights pull timbre toward the pilot reciter; not the right use of hours of studio data.</p>
+    </div>
+  </div>
+  <p class="note">Inputs for the new voice: hours of studio recordings — metrical ślokas across multiple meter families, transcribed per verse, plus prose (gadya).</p>
+</section>
+
+<section id="layout">
+  <h2>Voice pack layout</h2>
+  <p class="lead">A voice is a directory: manifest, bank, clips. The checkpoint lives on Hugging Face, as today.</p>
+  <div class="tree" aria-label="Repository layout for voice packs">
+    <div class="row"><span class="dir">voices/</span></div>
+    <div class="row">├─ <span class="pilot">pilot/</span>                    <span class="c"># the current shipped voice</span></div>
+    <div class="row">│  ├─ <span class="pilot">voice.json</span>              <span class="c"># display name · checkpoint file · consent record ref</span></div>
+    <div class="row">│  ├─ <span class="pilot">bank.json</span>               <span class="c"># per-meter references (moves from src/reference_bank/)</span></div>
+    <div class="row">│  └─ <span class="pilot">*.wav</span>                   <span class="c"># reference + prime clips</span></div>
+    <div class="row">└─ <span class="r2">reciter2/</span>                 <span class="c"># the new voice — same shape</span></div>
+    <div class="row">   ├─ <span class="r2">voice.json</span></div>
+    <div class="row">   ├─ <span class="r2">bank.json</span>               <span class="c"># incl. gadya entries, own sec_per_syll</span></div>
+    <div class="row">   └─ <span class="r2">*.wav</span></div>
+    <div class="row"><span class="dir">models/</span></div>
+    <div class="row">├─ <span class="pilot">pilot/model.pt</span>            <span class="c"># gitignored — hosted on HF (~900 MB fp16 each)</span></div>
+    <div class="row">└─ <span class="r2">reciter2/model.pt</span></div>
+    <div class="row"><span class="dir">src/reference_bank/</span></div>
+    <div class="row">└─ <span class="shared">vocab.txt</span>                <span class="c"># stays shared — tokenizer vocab, not voice data</span></div>
+  </div>
+  <p class="note"><code>VAGDHENU_VOICE</code> env and a <code>--voice</code> CLI flag select a pack. Default is <em>pilot</em> — existing invocations change nothing.</p>
+</section>
+
+<section id="training">
+  <h2>Training pipeline</h2>
+  <p class="lead">Four phases, in order — every script already exists in <em>training/</em>; only the data is new.</p>
+  <div class="phases">
+    <div class="phase">
+      <span class="num" aria-hidden="true"></span>
+      <div>
+        <h3>Data preparation</h3>
+        <p><code>phonemize_corpus.py</code> → <code>tts_build_training.py</code> over the transcribed corpus — metrical <em>and prose</em>. The same <code>prep_text</code> frontend applies: Kannada routing and sandhi rules are identical for every voice.</p>
+        <p class="rule">Prose chunks on safe word boundaries with a <em>gadya</em> label instead of a meter key — it adds phonetic coverage in a non-metrical register.</p>
+      </div>
+    </div>
+    <div class="phase">
+      <span class="num" aria-hidden="true"></span>
+      <div>
+        <h3>Voice fine-tune</h3>
+        <p><code>finetune_indicf5.py</code>, warm-started from the <strong>GRN-corrected Indic checkpoint</strong> — not from the pilot voice, to avoid inheriting its timbre. lr 1e-5 · bf16 · 100-band mel @ 24 kHz. Runs on the A6000 host.</p>
+      </div>
+    </div>
+    <div class="phase">
+      <span class="num" aria-hidden="true"></span>
+      <div>
+        <h3>Voice-steering retrain</h3>
+        <p><code>phase2_finetune.py</code> with ~150–200 paired clips from the new corpus, mirroring the shipped 179-clip recipe, so the new voice responds to reference clips — the system's only working prosody lever.</p>
+      </div>
+    </div>
+    <div class="phase">
+      <span class="num" aria-hidden="true"></span>
+      <div>
+        <h3>Reference bank build</h3>
+        <p>Per meter: a half-hemistich clip (~7 s, clean daṇḍa boundary) with exactly-matching text; <code>sec_per_syll</code> measured from the new reciter's actual pace; repeat-primes selected or recorded. Gadya entries included, with prose pace calibrated separately from chant pace.</p>
+        <p class="rule">The half-reference rule holds: reference text must match the spoken span exactly, on a clean word or daṇḍa boundary. BigVGAN stays shared — a per-voice vocoder fine-tune only if by-ear checks reveal artifacts.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="code">
+  <h2>Code changes</h2>
+  <p class="lead">Small and surgical — one new module, one flag threaded through.</p>
+  <table class="changes">
+    <thead>
+      <tr><th scope="col">Where</th><th scope="col">Change</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>src/voices.py<span class="new-badge">new</span></td>
+        <td>~50 lines: resolves <em>voice_id → {checkpoint path, bank path}</em> from <em>voices/*/voice.json</em>. The single resolution point for renderers and demos.</td>
+      </tr>
+      <tr>
+        <td>render.py · render_core.py · render_production.py</td>
+        <td>A <em>--voice</em> flag replaces hard-coded bank and checkpoint defaults. Helpers stay mirrored verbatim between render.py and render_core.py, per repo rule.</td>
+      </tr>
+      <tr>
+        <td>meter detection</td>
+        <td>Signatures keep calibrating from the <strong>pilot</strong> bank (canonical). A voice bank missing a meter — or gadya — falls back to the pilot clip for that entry with a logged warning: degraded timbre for that verse, never a hard failure.</td>
+      </tr>
+      <tr>
+        <td>fix_duration</td>
+        <td>Computed from the <em>selected voice's</em> sec_per_syll and its actual reference length, including prime swaps — the 2026-06-22 rule holds per voice. fix_duration remains TOTAL (reference + generated).</td>
+      </tr>
+      <tr>
+        <td>demo/app.py · demo/server.py</td>
+        <td>A voice dropdown. The warm server loads packs lazily and keeps them resident — ~2.5 GB each, comfortable on the A6000.</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="bank">
+  <h2>Reference bank coverage</h2>
+  <p class="lead">Meter drives everything through the reference — each meter needs a clip in each voice.</p>
+  <div class="bank-grid">
+    <div class="meter"><span class="deva">अनुष्टुभ्</span><span class="iast">anuṣṭubh</span><span class="dots"><i class="vdot have"></i><i class="vdot pending"></i></span></div>
+    <div class="meter"><span class="deva">उपजाति</span><span class="iast">upajāti</span><span class="dots"><i class="vdot have"></i><i class="vdot pending"></i></span></div>
+    <div class="meter"><span class="deva">इन्द्रवज्रा</span><span class="iast">indravajrā</span><span class="dots"><i class="vdot have"></i><i class="vdot pending"></i></span></div>
+    <div class="meter"><span class="deva">उपेन्द्रवज्रा</span><span class="iast">upendravajrā</span><span class="dots"><i class="vdot have"></i><i class="vdot pending"></i></span></div>
+    <div class="meter"><span class="deva">वसन्ततिलका</span><span class="iast">vasantatilakā</span><span class="dots"><i class="vdot have"></i><i class="vdot pending"></i></span></div>
+    <div class="meter"><span class="deva">शार्दूलविक्रीडित</span><span class="iast">śārdūlavikrīḍita</span><span class="dots"><i class="vdot have"></i><i class="vdot pending"></i></span></div>
+    <div class="meter"><span class="deva">स्रग्धरा</span><span class="iast">sragdharā</span><span class="dots"><i class="vdot have"></i><i class="vdot pending"></i></span></div>
+    <div class="meter"><span class="deva">मालिनी</span><span class="iast">mālinī</span><span class="dots"><i class="vdot have"></i><i class="vdot pending"></i></span></div>
+    <div class="meter"><span class="deva">शालिनी</span><span class="iast">śālinī</span><span class="dots"><i class="vdot have"></i><i class="vdot pending"></i></span></div>
+    <div class="meter"><span class="deva">रथोद्धता</span><span class="iast">rathoddhatā</span><span class="dots"><i class="vdot have"></i><i class="vdot pending"></i></span></div>
+    <div class="meter"><span class="deva">द्रुतविलम्बित</span><span class="iast">drutavilambita</span><span class="dots"><i class="vdot have"></i><i class="vdot pending"></i></span></div>
+    <div class="meter"><span class="deva">भुजङ्गप्रयात</span><span class="iast">bhujaṅgaprayāta</span><span class="dots"><i class="vdot have"></i><i class="vdot pending"></i></span></div>
+    <div class="meter"><span class="deva">वंशस्थ</span><span class="iast">vaṁśastha</span><span class="dots"><i class="vdot have"></i><i class="vdot pending"></i></span></div>
+    <div class="meter"><span class="deva">इन्द्रवंशा</span><span class="iast">indravaṁśā</span><span class="dots"><i class="vdot have"></i><i class="vdot pending"></i></span></div>
+    <div class="meter"><span class="deva">प्रमाणिका</span><span class="iast">pramāṇikā</span><span class="dots"><i class="vdot have"></i><i class="vdot pending"></i></span></div>
+    <div class="meter"><span class="deva">गद्य</span><span class="iast">gadya · prose</span><span class="dots"><i class="vdot have"></i><i class="vdot pending"></i></span></div>
+  </div>
+  <div class="bank-key" aria-label="Coverage key">
+    <span><i class="k-have"></i> pilot clip in bank today</span>
+    <span><i class="k-build"></i> reciter-2 clip selected</span>
+    <span><i class="k-pending"></i> reciter-2 clip to build</span>
+  </div>
+  <p class="note">Repeat-primes (prime_mono · prime_jaya · prime_chata) are built per voice alongside the meters. A missing entry falls back to the pilot clip with a warning.</p>
+</section>
+
+<section id="verification">
+  <h2>Verification</h2>
+  <p class="lead">By-ear, per the project's QC philosophy — with one hard regression gate.</p>
+  <ul class="checks">
+    <li class="gate"><strong>Regression gate.</strong> Render <em>examples/sample_shard.json</em> with <em>--voice pilot</em> before and after the refactor — durations must match the prior good output exactly.</li>
+    <li class="ear"><strong>New-voice hard cases.</strong> Same shard with <em>--voice reciter2</em>; by-ear check retroflex conjuncts (ṣṭ, ḍḍh), long-vowel daṇḍa-final visarga, a repeat-prime verse, one held-out meter, and a prose chunk.</li>
+    <li class="gate"><strong>Automatic gates unchanged.</strong> The duration gate and internal-silence gate run as-is — they are voice-agnostic.</li>
+  </ul>
+</section>
+
+<section id="constraints">
+  <h2>Constraints &amp; scope</h2>
+  <div class="constraints">
+    <div class="constraint">
+      <strong>Locked parameters stay locked</strong>
+      NFE, sway coefficient, speed, and CFG are voice-independent and unchanged. No edits to the frontend, meter detection logic, or inference defaults.
+    </div>
+    <div class="constraint">
+      <strong>Known limits persist</strong>
+      Repeated-syllable depth beyond ~4 remains unrecoverable in any voice — a documented limitation, not a bug to fix in this project.
+    </div>
+    <div class="constraint ethics">
+      <strong>Consent before training</strong>
+      The new reciter's explicit consent is obtained and recorded before any fine-tune, referenced from voice.json. The system stays liturgical-register — not a general voice-cloning tool.
+    </div>
+    <div class="constraint">
+      <strong>Out of scope</strong>
+      The multi-reciter single model (a later research track) and voice-agnostic zero-shot chant.
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  Vāgdhenu · second-voice design plan · spec at <em>docs/superpowers/specs/2026-07-30-second-voice-design.md</em>
+</footer>
+
+</body>
+</html>
